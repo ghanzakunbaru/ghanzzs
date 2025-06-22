@@ -1,44 +1,58 @@
-export default async function handler(req, res) {
-  const { token } = req.body;
+const password = "ghanz123";
 
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-  const GITHUB_OWNER = "ghanzakunbaru";
-  const GITHUB_REPO = "payment";
-  const GITHUB_FILE_PATH = "tokens.json";
+function checkPassword() {
+  const pw = document.getElementById("pw").value;
+  if (pw === password) {
+    document.getElementById("form").style.display = "block";
+  } else {
+    alert("Password salah!");
+  }
+}
 
-  const apiUrl = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`;
-  const headers = {
-    Authorization: `token ${GITHUB_TOKEN}`,
-    Accept: "application/vnd.github+json",
-  };
+async function submitToken() {
+  const tokenInput = document.getElementById("token").value;
 
-  try {
-    const getRes = await fetch(apiUrl, { headers });
-    const fileData = await getRes.json();
+  const githubToken = "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";
+  const repo = "ghanzakunbaru/payment";
+  const path = "tokens.json";
+  const apiUrl = `https://api.github.com/repos/${repo}/contents/${path}`;
 
-    let tokenList = [];
-    if (fileData.content) {
-      const oldContent = Buffer.from(fileData.content, "base64").toString();
-      tokenList = JSON.parse(oldContent);
+  // ambil isi file lama
+  const response = await fetch(apiUrl, {
+    headers: {
+      Authorization: `token ${githubToken}`,
+      Accept: "application/vnd.github+json"
     }
+  });
 
-    tokenList.push(token);
+  const data = await response.json();
+  let contentList = [];
 
-    const newContent = Buffer.from(JSON.stringify(tokenList, null, 2)).toString("base64");
+  if (data.content) {
+    const old = atob(data.content);
+    contentList = JSON.parse(old);
+  }
 
-    await fetch(apiUrl, {
-      method: "PUT",
-      headers,
-      body: JSON.stringify({
-        message: `Add token`,
-        content: newContent,
-        sha: fileData.sha,
-      }),
-    });
+  contentList.push(tokenInput);
 
-    res.status(200).json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, error: err.message });
+  const updatedContent = btoa(JSON.stringify(contentList, null, 2));
+
+  const updateRes = await fetch(apiUrl, {
+    method: "PUT",
+    headers: {
+      Authorization: `token ${githubToken}`,
+      Accept: "application/vnd.github+json"
+    },
+    body: JSON.stringify({
+      message: "Add token",
+      content: updatedContent,
+      sha: data.sha
+    })
+  });
+
+  if (updateRes.ok) {
+    alert("Token berhasil ditambahkan!");
+  } else {
+    alert("Gagal menambahkan token.");
   }
 }
