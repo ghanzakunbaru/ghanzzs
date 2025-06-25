@@ -1,19 +1,76 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Tambah Token</title>
+  <meta charset="UTF-8">
+  <title>add lewat sini pantek</title>
+  <style>
+    body { font-family: Arial; padding: 20px; max-width: 500px; margin: auto; }
+    input, button { width: 100%; padding: 10px; margin-top: 10px; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    pre { background: #f4f4f4; padding: 10px; margin-top: 15px; white-space: pre-wrap; }
+  </style>
 </head>
 <body>
-  <h2>Masukkan Password</h2>
-  <input type="password" id="pw">
-  <button onclick="checkPassword()">Masuk</button>
+  <h2>addtoken lewat web boss 🗿</h2>
+  <input type="text" id="token" placeholder="masukin eee apa token nya" required />
+  <button onclick="addToken()">Add Token</button>
+  <pre id="output"></pre>
 
-  <div id="form" style="display:none;">
-    <h2>Tambah Token</h2>
-    <input type="text" id="token" placeholder="Token...">
-    <button onclick="submitToken()">Simpan</button>
-  </div>
+  <script>
+    const GITHUB_REPO = "ghanzakunbaru/Ghanznew";
+    const GITHUB_FILE_PATH = "tokens.json";
+    const GITHUB_PAT = "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";
+    const API_URL = `https://api.github.com/repos/${GITHUB_REPO}/contents/${GITHUB_FILE_PATH}`;
 
-  <script src="addtoken.js"></script>
+    async function addToken() {
+      const token = document.getElementById("token").value.trim();
+      const output = document.getElementById("output");
+
+      if (!token) return alert("Token tidak boleh kosong!");
+
+      let sha = null;
+      let json = [];
+
+      try {
+        const res = await fetch(API_URL, {
+          headers: { Authorization: `token ${GITHUB_PAT}` }
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          sha = data.sha;
+          const content = atob(data.content.replace(/\n/g, ""));
+          const parsed = JSON.parse(content);
+          json = Array.isArray(parsed) ? parsed : [];
+        }
+      } catch {
+        json = [];
+      }
+
+      json.push({ token, date: new Date().toISOString() });
+
+      const updateRes = await fetch(API_URL, {
+        method: "PUT",
+        headers: {
+          Authorization: `token ${GITHUB_PAT}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "Add Telegram token",
+          content: btoa(JSON.stringify(json, null, 2)),
+          sha
+        })
+      });
+
+      if (updateRes.ok) {
+        output.textContent = "✅ Token berhasil ditambahkan.";
+        document.getElementById("token").value = "";
+      } else {
+        const err = await updateRes.json();
+        output.textContent = "❌ Error:\n" + JSON.stringify(err, null, 2);
+      }
+    }
+  </script>
 </body>
 </html>
